@@ -19,7 +19,7 @@ A Gomoku (Five-in-a-row) game with an AI opponent powered by the minimax algorit
 
 1. Clone the repository:
 ```
-git clone https://github.com/yourusername/gomokuAI.git
+git clone https://github.com/kibria30/Mini-Gomoku
 cd gomokuAI
 ```
 
