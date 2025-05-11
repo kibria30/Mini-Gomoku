@@ -44,3 +44,60 @@ def __init__(self, board_size=10):
             self.current_player = 3 - self.current_player  # Alternates between 1 and 2
         
         return True
+
+
+            def check_win(self, row, col):
+        """Check if the last move at (row, col) resulted in 5 in a row."""
+        player = self.board[row, col]
+        directions = [
+            [(0, 1), (0, -1)],  # Horizontal
+            [(1, 0), (-1, 0)],  # Vertical
+            [(1, 1), (-1, -1)],  # Diagonal \
+            [(1, -1), (-1, 1)]   # Diagonal /
+        ]
+        
+        for dir_pair in directions:
+            count = 1  # Count the stone at (row, col)
+            
+            # Check in both directions
+            for dr, dc in dir_pair:
+                r, c = row, col
+                for _ in range(4):  # Need 5 in a row to win
+                    r, c = r + dr, c + dc
+                    if (0 <= r < self.board_size and 
+                        0 <= c < self.board_size and 
+                        self.board[r, c] == player):
+                        count += 1
+                    else:
+                        break
+                        
+            if count >= 5:
+                return True
+                
+        return False
+    
+    def get_valid_moves(self):
+        """Return a list of all valid moves on the board."""
+        valid_moves = []
+        for r in range(self.board_size):
+            for c in range(self.board_size):
+                if self.board[r, c] == 0:
+                    valid_moves.append((r, c))
+        return valid_moves
+    
+    def get_board_copy(self):
+        """Return a deep copy of the current board state."""
+        return self.board.copy()
+    
+    def get_board_state(self):
+        """Return a tuple of (board, current_player, game_over, winner)."""
+        return (self.board.copy(), self.current_player, 
+                self.game_over, self.winner)
+    
+    def __str__(self):
+        """String representation of the board."""
+        symbols = {0: ".", 1: "X", 2: "O"}
+        result = "  " + " ".join(str(i) for i in range(self.board_size)) + "\n"
+        for i in range(self.board_size):
+            result += f"{i} " + " ".join(symbols[self.board[i, j]] for j in range(self.board_size)) + "\n"
+        return result 
