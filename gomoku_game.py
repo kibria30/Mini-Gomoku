@@ -1,7 +1,7 @@
 import numpy as np
 
 class GomokuGame:
-def __init__(self, board_size=10):
+    def __init__(self, board_size=10):
         """Initialize an empty Gomoku board."""
         self.board_size = board_size
         self.board = np.zeros((board_size, board_size), dtype=int)
@@ -46,7 +46,7 @@ def __init__(self, board_size=10):
         return True
 
 
-            def check_win(self, row, col):
+    def check_win(self, row, col):
         """Check if the last move at (row, col) resulted in 5 in a row."""
         player = self.board[row, col]
         directions = [

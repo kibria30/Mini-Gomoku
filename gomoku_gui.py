@@ -56,23 +56,29 @@ class GomokuGUI:
     
 
     def draw_board(self):
+        pass
         # under construction
 
 
 
     def draw_stone(self, row, col):
+        pass
         # def under construction
 
     def handle_click(self, event):
+        pass
         # soon
     
     def ai_move(self):
+        pass
         # soon
 
     def show_game_result(self):
+        pass
         #soon to 
 
     def reset_game(self):
+        pass
         # I will do this near future.
 
 
