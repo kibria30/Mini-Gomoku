@@ -162,8 +162,45 @@ class GomokuGUI:
         self.ai_thread = None
      
     def draw_board(self):
-        pass
-
+        """Draw the enhanced Gomoku board"""
+        self.canvas.delete("all")
+        
+        # Draw grid with better styling
+        for i in range(self.board_size):
+            # Horizontal lines
+            self.canvas.create_line(
+                0, i * self.cell_size + self.cell_size // 2,
+                self.canvas_size, i * self.cell_size + self.cell_size // 2,
+                width=1.5, fill="#8B4513"  # SaddleBrown
+            )
+            # Vertical lines
+            self.canvas.create_line(
+                i * self.cell_size + self.cell_size // 2, 0,
+                i * self.cell_size + self.cell_size // 2, self.canvas_size,
+                width=1.5, fill="#8B4513"
+            )
+        
+        # Draw star points with better visibility
+        star_points = self.get_star_points()
+        for point in star_points:
+            r, c = point
+            x = c * self.cell_size + self.cell_size // 2
+            y = r * self.cell_size + self.cell_size // 2
+            self.canvas.create_oval(
+                x - 5, y - 5, x + 5, y + 5,
+                fill="#8B0000", outline="#8B0000"  # DarkRed
+            )
+        
+        # Highlight last move if exists
+        if self.game.last_move:
+            self.highlight_last_move(*self.game.last_move)
+        
+        # Draw stones
+        for r in range(self.board_size):
+            for c in range(self.board_size):
+                if self.game.board[r, c] != 0:
+                    self.draw_stone(r, c)
+    
     def draw_stone(self, row, col):
         pass
         # def under construction
