@@ -839,7 +839,7 @@ class GomokuGUI:
         close_btn.pack(pady=20)
 
 
-def main():
+def run_gui_2():
     """Main function to start the game."""
     # Enable DPI awareness for better display on high-resolution screens
     try:
@@ -852,6 +852,3 @@ def main():
     app = GomokuGUI(root)
     root.mainloop()
 
-
-if __name__ == "__main__":
-    main()
