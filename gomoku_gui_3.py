@@ -12,7 +12,7 @@ Features:
 import sys
 import numpy as np
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                             QLabel, QPushButton, QFrame, QStackedWidget, QMessageBox, QFileDialog)
+                             QLabel, QPushButton, QFrame, QStackedWidget, QMessageBox, QFileDialog, QButtonGroup)
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QPixmap, QPainter, QColor, QFont, QIcon, QImage
 from gomoku_game import GomokuGame
@@ -22,54 +22,87 @@ from gomoku_ai import GomokuAI
 class GomokuGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowFlags(Qt.FramelessWindowHint)  # Remove default window frame
+        self.setWindowFlags(Qt.FramelessWindowHint)
         self.setWindowTitle("GOMOKU AI")
         self.setMinimumSize(800, 600)
+
+        self.setStyleSheet("""
+            QWidget {
+                color: white;
+            }
+            QLabel {
+                color: white;
+            }
+        """)
+
+        # Color palette
+        self.COLORS = {
+            # Backgrounds
+            'bg_dark': '#333333',
+            'bg_wood': '#D2B48C',  # Tan wood color
+            'bg_panel': '#444444',
+
+            # Text
+            'text_light': '#FFFFFF',
+            'text_dark': '#000000',
+
+            # Interactive elements
+            'button_base': '#444444',
+            'button_hover': '#555555',
+            'button_border': '#555555',
+
+            # Selection states
+            'select_green': '#4CAF50',
+            'select_green_hover': '#45A049',
+            'select_blue': '#2196F3',
+            'select_blue_hover': '#0B7DDA',
+            'select_orange': '#FF9800',
+            'select_orange_hover': '#E68A00',
+
+            # Game elements
+            'stone_black': '#2D2D2D',
+            'stone_white': '#FAFAFA',
+            'stone_shadow': 'rgba(100, 100, 100, 150)',
+            'grid_line': '#966F33',
+            'highlight': 'rgba(255, 215, 0, 150)',
+
+            # Top bar
+            'top_bar': '#FADCA2',
+            'top_bar_border': '#E8C98F',
+            'window_control_hover': '#E8C98F'
+        }
 
         # Game state
         self.game = None
         self.ai = None
         self.ai_thinking = False
-        self.player_color = 1  # 1 for black, 2 for white
+        self.player_color = 1
         self.board_size = 15
-        self.ai_difficulty = 3  # Default to easy
+        self.ai_difficulty = 3
 
-        # Setup UI
+        # Initialize UI
         self.init_ui()
 
-        # Load background image (placeholder - replace with actual image)
-        self.background = QPixmap("assets/background.png")
+        # Load background
+        self.background = QPixmap("assets/background.jpg")
         if self.background.isNull():
-            # Fallback to dark color if image not found
             self.background = QPixmap(QSize(1, 1))
-            self.background.fill(QColor(50, 50, 50))
+            self.background.fill(QColor(self.COLORS['bg_dark']))
+
+    def get_color(self, name, alpha=255):
+        """Helper to get QColor from palette with optional alpha"""
+        color = QColor(self.COLORS[name])
+        if alpha != 255:
+            color.setAlpha(alpha)
+        return color
 
     def init_ui(self):
-        # Set default styles
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #333333;
-                color: #ffffff;
-            }
-            QLabel {
-                color: #ffffff;
-            }
-            QPushButton {
-                background-color: #555555;
-                color: #ffffff;
-                border: 1px solid #777777;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                background-color: #666666;
-            }
-        """)
-
-        # Main container
+        # previously here were some stylesheets
+        # Main widget and layout
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
 
-        # Stacked widget for different views
+        # Stacked widget for views
         self.stacked_widget = QStackedWidget()
 
         # Create views
@@ -91,24 +124,22 @@ class GomokuGUI(QMainWindow):
         self.create_top_bar()
 
     def create_top_bar(self):
-        # Top bar frame
         self.top_bar = QFrame()
         self.top_bar.setFixedHeight(70)
-        self.top_bar.setStyleSheet("""
-            background-color: #FADCA2;
-            border-bottom: 1px solid #E8C98F;
+        self.top_bar.setStyleSheet(f"""
+            background-color: {self.COLORS['top_bar']};
+            border-bottom: 1px solid {self.COLORS['top_bar_border']};
         """)
 
-        # Top bar layout
         top_layout = QHBoxLayout(self.top_bar)
         top_layout.setContentsMargins(20, 0, 20, 0)
 
         # Title
         title = QLabel("GOMOKU AI")
-        title.setStyleSheet("""
+        title.setStyleSheet(f"""
             font-size: 24px; 
             font-weight: bold;
-            color: #000000;
+            color: {self.COLORS['text_dark']};
         """)
         top_layout.addWidget(title, alignment=Qt.AlignLeft)
 
@@ -116,31 +147,25 @@ class GomokuGUI(QMainWindow):
         controls = QWidget()
         controls_layout = QHBoxLayout(controls)
 
-        minimize = QPushButton("—")
-        maximize = QPushButton("□")
-        close = QPushButton("×")
-
-        for btn in [minimize, maximize, close]:
+        for symbol, action in [("—", self.showMinimized),
+                               ("□", self.toggle_maximize),
+                               ("×", self.close)]:
+            btn = QPushButton(symbol)
             btn.setFixedSize(30, 30)
-            btn.setStyleSheet("""
-                QPushButton {
+            btn.setStyleSheet(f"""
+                QPushButton {{
                     border: none;
                     font-size: 18px;
-                    color: #000000;
-                }
-                QPushButton:hover {
-                    background-color: #E8C98F;
-                }
+                    color: {self.COLORS['text_dark']};
+                }}
+                QPushButton:hover {{
+                    background-color: {self.COLORS['window_control_hover']};
+                }}
             """)
+            btn.clicked.connect(action)
             controls_layout.addWidget(btn)
 
-        minimize.clicked.connect(self.showMinimized)
-        maximize.clicked.connect(self.toggle_maximize)
-        close.clicked.connect(self.close)
-
         top_layout.addWidget(controls, alignment=Qt.AlignRight)
-
-        # Add top bar to main window
         self.central_widget.layout().insertWidget(0, self.top_bar)
 
     def toggle_maximize(self):
@@ -149,26 +174,34 @@ class GomokuGUI(QMainWindow):
         else:
             self.showMaximized()
 
+    # below menu is final
     def create_menu_view(self):
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        layout.setAlignment(Qt.AlignCenter)  # Center all content
         layout.setContentsMargins(50, 50, 50, 50)
         layout.setSpacing(30)
 
-        # Welcome message
+        # Welcome message - Bigger, bolder, and centered
         welcome = QLabel("Welcome to Gomoku AI!")
-        welcome.setStyleSheet("font-size: 32px;")
-        layout.addWidget(welcome)
+        welcome.setStyleSheet("""
+            QLabel {
+                font-size: 42px;
+                font-weight: bold;
+                color: white;
+                padding-bottom: 20px;
+            }
+        """)
+        layout.addWidget(welcome, alignment=Qt.AlignCenter)
 
-        # Start Game button
+        # Start Game button (centered)
         start_btn = QPushButton("Start Game")
         start_btn.setStyleSheet("""
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
                 font-size: 18px;
-                padding: 10px;
+                padding: 12px 30px;
                 border-radius: 5px;
                 min-width: 200px;
             }
@@ -177,16 +210,16 @@ class GomokuGUI(QMainWindow):
             }
         """)
         start_btn.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.settings_view))
-        layout.addWidget(start_btn, alignment=Qt.AlignLeft)
+        layout.addWidget(start_btn, alignment=Qt.AlignCenter)
 
-        # Rules button
+        # Rules button (centered)
         rules_btn = QPushButton("Rules of Gomoku")
         rules_btn.setStyleSheet("""
             QPushButton {
                 background-color: #2196F3;
                 color: white;
                 font-size: 18px;
-                padding: 10px;
+                padding: 12px 30px;
                 border-radius: 5px;
                 min-width: 200px;
             }
@@ -195,7 +228,7 @@ class GomokuGUI(QMainWindow):
             }
         """)
         rules_btn.clicked.connect(self.show_rules)
-        layout.addWidget(rules_btn, alignment=Qt.AlignLeft)
+        layout.addWidget(rules_btn, alignment=Qt.AlignCenter)
 
         return widget
 
@@ -218,6 +251,20 @@ class GomokuGUI(QMainWindow):
         msg.setWindowTitle("Rules of Gomoku")
         msg.setTextFormat(Qt.RichText)
         msg.setText(rules)
+        msg.setStyleSheet("""
+            QMessageBox {
+                background-color: #333333;
+                color: white;
+            }
+            QMessageBox QLabel {
+                color: white;
+            }
+            QMessageBox QPushButton {
+                background-color: #444444;
+                color: white;
+                padding: 5px 10px;
+            }
+        """)
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec_()
 
@@ -229,8 +276,12 @@ class GomokuGUI(QMainWindow):
         layout.setSpacing(30)
 
         # Back button
-        back_btn = QPushButton("← Back to Menu")
-        back_btn.setStyleSheet("font-size: 14px; border: none; color: #2196F3;")
+        back_btn = QPushButton("← Back")
+        back_btn.setStyleSheet(f"""
+            font-size: 14px; 
+            border: none; 
+            color: {self.COLORS['select_blue']};
+        """)
         back_btn.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.menu_view))
         layout.addWidget(back_btn, alignment=Qt.AlignLeft)
 
@@ -251,25 +302,28 @@ class GomokuGUI(QMainWindow):
         for size in [10, 15, 19]:
             btn = QPushButton(f"{size}x{size}")
             btn.setCheckable(True)
-            btn.setStyleSheet("""
-                QPushButton {
+            btn.setStyleSheet(f"""
+                QPushButton {{
                     padding: 8px;
-                    border: 1px solid #ccc;
+                    border: 2px solid {self.COLORS['button_border']};
                     border-radius: 5px;
                     min-width: 80px;
-                }
-                QPushButton:checked {
-                    background-color: #4CAF50;
-                    color: white;
-                }
+                    background-color: {self.COLORS['button_base']};
+                    color: {self.COLORS['text_light']};
+                }}
+                QPushButton:hover {{
+                    background-color: {self.COLORS['button_hover']};
+                }}
+                QPushButton:checked {{
+                    background-color: {self.COLORS['select_green']};
+                    border-color: {self.COLORS['select_green_hover']};
+                }}
             """)
             btn.clicked.connect(lambda _, s=size: self.set_board_size(s))
             size_layout.addWidget(btn)
             self.size_btns.append(btn)
 
-        # Default to 15x15
         self.size_btns[1].setChecked(True)
-        self.board_size = 15
         layout.addWidget(size_group)
 
         # Game mode selection
@@ -281,15 +335,50 @@ class GomokuGUI(QMainWindow):
         mode_group = QWidget()
         mode_layout = QHBoxLayout(mode_group)
 
+####################################################3
         pass_play = QPushButton("Pass & Play")
         pass_play.setCheckable(True)
         pass_play.setChecked(True)
+        pass_play.setStyleSheet(f"""
+            QPushButton {{
+                padding: 8px;
+                border: 2px solid {self.COLORS['button_border']};
+                border-radius: 5px;
+                min-width: 80px;
+                background-color: {self.COLORS['button_base']};
+                color: {self.COLORS['text_light']};
+            }}
+            QPushButton:hover {{
+                background-color: {self.COLORS['button_hover']};
+            }}
+            QPushButton:checked {{
+                background-color: {self.COLORS['select_green']};
+                border-color: {self.COLORS['select_green_hover']};
+            }}
+        """)
         pass_play.clicked.connect(self.toggle_ai_settings)
         mode_layout.addWidget(pass_play)
         self.mode_btns.append(pass_play)
 
         vs_ai = QPushButton("Play Against AI")
         vs_ai.setCheckable(True)
+        vs_ai.setStyleSheet(f"""
+            QPushButton {{
+                padding: 8px;
+                border: 2px solid {self.COLORS['button_border']};
+                border-radius: 5px;
+                min-width: 80px;
+                background-color: {self.COLORS['button_base']};
+                color: {self.COLORS['text_light']};
+            }}
+            QPushButton:hover {{
+                background-color: {self.COLORS['button_hover']};
+            }}
+            QPushButton:checked {{
+                background-color: {self.COLORS['select_green']};
+                border-color: {self.COLORS['select_green_hover']};
+            }}
+        """)
         vs_ai.clicked.connect(self.toggle_ai_settings)
         mode_layout.addWidget(vs_ai)
         self.mode_btns.append(vs_ai)
@@ -314,12 +403,46 @@ class GomokuGUI(QMainWindow):
         black = QPushButton("Black (First)")
         black.setCheckable(True)
         black.setChecked(True)
+        black.setStyleSheet(f"""
+            QPushButton {{
+                padding: 8px;
+                border: 2px solid {self.COLORS['button_border']};
+                border-radius: 5px;
+                min-width: 80px;
+                background-color: {self.COLORS['button_base']};
+                color: {self.COLORS['text_light']};
+            }}
+            QPushButton:hover {{
+                background-color: {self.COLORS['button_hover']};
+            }}
+            QPushButton:checked {{
+                background-color: {self.COLORS['select_green']};
+                border-color: {self.COLORS['select_green_hover']};
+            }}
+        """)
         black.clicked.connect(lambda: self.set_player_color(1))
         piece_layout.addWidget(black)
         self.piece_btns.append(black)
 
         white = QPushButton("White (Second)")
         white.setCheckable(True)
+        white.setStyleSheet(f"""
+            QPushButton {{
+                padding: 8px;
+                border: 2px solid {self.COLORS['button_border']};
+                border-radius: 5px;
+                min-width: 80px;
+                background-color: {self.COLORS['button_base']};
+                color: {self.COLORS['text_light']};
+            }}
+            QPushButton:hover {{
+                background-color: {self.COLORS['button_hover']};
+            }}
+            QPushButton:checked {{
+                background-color: {self.COLORS['select_green']};
+                border-color: {self.COLORS['select_green_hover']};
+            }}
+        """)
         white.clicked.connect(lambda: self.set_player_color(2))
         piece_layout.addWidget(white)
         self.piece_btns.append(white)
@@ -338,6 +461,26 @@ class GomokuGUI(QMainWindow):
         for i, diff in enumerate(["Easy", "Normal", "Hard"]):
             btn = QPushButton(diff)
             btn.setCheckable(True)
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    padding: 8px;
+                    border: 2px solid {self.COLORS['button_border']};
+                    border-radius: 5px;
+                    min-width: 80px;
+                    background-color: {self.COLORS['button_base']};
+                    color: {self.COLORS['text_light']};
+                }}
+                QPushButton:hover {{
+                    background-color: {self.COLORS['button_hover']};
+                }}
+                QPushButton:checked {{
+                    background-color: {self.COLORS['select_orange']};
+                    border-color: {self.COLORS['select_orange_hover']};
+                }}
+                QPushButton:checked:hover {{
+                    background-color: {self.COLORS['select_orange_hover']};
+                }}
+            """)
             if i == 0:
                 btn.setChecked(True)
             btn.clicked.connect(lambda _, d=i + 3: self.set_ai_difficulty(d))
@@ -350,19 +493,19 @@ class GomokuGUI(QMainWindow):
 
         # Start button
         start_btn = QPushButton("Start Game")
-        start_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
+        start_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.COLORS['select_green']};
                 color: white;
                 font-size: 18px;
                 padding: 10px;
                 border-radius: 5px;
                 min-width: 200px;
                 margin-top: 20px;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {self.COLORS['select_green_hover']};
+            }}
         """)
         start_btn.clicked.connect(self.start_game)
         layout.addWidget(start_btn, alignment=Qt.AlignLeft)
@@ -426,10 +569,24 @@ class GomokuGUI(QMainWindow):
         controls_layout.setSpacing(15)
 
         # Game info
-        self.game_info = QLabel("Current turn: Black")
-        self.game_info.setStyleSheet("font-size: 16px;")
-        controls_layout.addWidget(self.game_info)
 
+        self.game_info = QLabel("Current turn: Black")
+        self.game_info.setStyleSheet("""
+            QLabel {
+                font-size: 16px;
+                font-weight: 500;  /* Semi-bold */
+                color: #E0E0E0;   /* Soft white */
+                background-color: #424242;  /* Dark gray */
+                border: 1px solid #616161;  /* Slightly lighter border */
+                border-radius: 4px;
+                padding: 6px 12px;
+                margin: 8px 0;
+                min-width: 180px;
+                text-align: center;
+            }
+        """)
+        controls_layout.addWidget(self.game_info)
+### fix this
         # Control buttons
         new_game = QPushButton("Start New Game")
         undo = QPushButton("Undo Move")
@@ -437,16 +594,20 @@ class GomokuGUI(QMainWindow):
         hint = QPushButton("Get Hint")
 
         for btn in [new_game, undo, abandon, hint]:
-            btn.setStyleSheet("""
-                QPushButton {
-                    padding: 10px;
-                    font-size: 16px;
-                    border-radius: 5px;
-                }
-                QPushButton:hover {
-                    background-color: #e0e0e0;
-                }
-            """)
+            btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.COLORS['select_green']};
+                color: white;
+                font-size: 18px;
+                padding: 10px;
+                border-radius: 5px;
+                width: 200px;
+                margin-top: 20px;
+            }}
+            QPushButton:hover {{
+                background-color: {self.COLORS['select_green_hover']};
+            }}
+        """)
             controls_layout.addWidget(btn)
 
         new_game.clicked.connect(self.reset_game)
@@ -477,15 +638,71 @@ class GomokuGUI(QMainWindow):
         self.update_game_info()
         self.stacked_widget.setCurrentWidget(self.game_view)
 
+## style here
     def reset_game(self):
         # Confirm with user
-        reply = QMessageBox.question(
-            self, 'Confirm', 'Start a new game? Current game will be lost.',
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-        )
+        reply = QMessageBox(QMessageBox.Question,
+                            'Confirm',
+                            'Start a new game? Current game will be lost.',
+                            QMessageBox.Yes | QMessageBox.No,
+                            self)
+        reply.setDefaultButton(QMessageBox.No)
 
-        if reply == QMessageBox.Yes:
+        # Show the dialog but do not block yet
+        yes_button = reply.button(QMessageBox.Yes)
+        no_button = reply.button(QMessageBox.No)
+
+        # Apply styles directly to buttons
+        yes_button.setStyleSheet("""
+            QPushButton {
+                color: white;
+                background-color: #555555;
+                border: 1px solid #888888;
+                padding: 6px 12px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #666666;
+            }
+            QPushButton:pressed {
+                background-color: #444444;
+            }
+        """)
+
+        no_button.setStyleSheet("""
+            QPushButton {
+                color: white;
+                background-color: #555555;
+                border: 1px solid #888888;
+                padding: 6px 12px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #666666;
+            }
+            QPushButton:pressed {
+                background-color: #444444;
+            }
+        """)
+
+        # Set overall style for dialog
+        reply.setStyleSheet("""
+            QMessageBox {
+                background-color: #333333;
+                color: white;
+            }
+            QLabel {
+                color: white;
+            }
+        """)
+
+        # Get the response
+        result = reply.exec_()
+        if result == QMessageBox.Yes:
             self.start_game()
+
+        # if reply == QMessageBox.Yes:
+        #     self.start_game()
 
     def undo_move(self):
         if self.game and not self.ai_thinking:
@@ -624,41 +841,97 @@ class GomokuGUI(QMainWindow):
         if self.game.game_over:
             if self.game.winner == 0:
                 text = "Game ended in a draw!"
+                self.game_info.setStyleSheet("""
+                    QLabel {
+                        font-size: 18px;
+                        font-weight: bold;
+                        color: #FADCA2;
+                        background-color: rgba(70, 70, 70, 200);
+                        border: 1px solid #616161;
+                        border-radius: 6px;
+                        padding: 8px 12px;
+                        min-width: 200px;
+                        text-align: center;
+                    }
+                """)
             else:
                 winner = "Black" if self.game.winner == 1 else "White"
                 text = f"{winner} wins!"
+                self.game_info.setStyleSheet(f"""
+                    QLabel {{
+                        font-size: 18px;
+                        font-weight: bold;
+                        color: {'#FADCA2' if winner == 'Black' else '#FFFFFF'};
+                        background-color: {'rgba(50, 70, 50, 200)' if winner == 'Black' else 'rgba(70, 70, 90, 200)'};
+                        border: 1px solid {'#45a049' if winner == 'Black' else '#0b7dda'};
+                        border-radius: 6px;
+                        padding: 8px 12px;
+                        min-width: 200px;
+                        text-align: center;
+                    }}
+                """)
         else:
             current = "Black" if self.game.current_player == 1 else "White"
             text = f"Current turn: {current}"
-
-            if self.ai:
-                score = self.ai.evaluate(self.game)
-                black_score = 50 + min(45, score // 2000)  # Scale to 5-95%
-                white_score = 100 - black_score
-                self.win_prediction.setText(
-                    f"Win Prediction: Black {black_score}% - White {white_score}%"
-                )
+            self.game_info.setStyleSheet(f"""
+                QLabel {{
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: #E0E0E0;
+                    background-color: #424242;
+                    border: 1px solid #616161;
+                    border-radius: 4px;
+                    padding: 6px 12px;
+                    min-width: 180px;
+                    text-align: center;
+                }}
+            """)
 
         self.game_info.setText(text)
 
-        # Update win prediction (simplified for demo)
-        if not self.game.game_over:
-            # This would be replaced with actual prediction from AI evaluation
-            black_score = 50
-            white_score = 50
+        # Win prediction styling
+        if not self.game.game_over and self.ai:
+            score = self.ai.evaluate(self.game)
+            black_score = 50 + min(45, score // 2000)  # Scale to 5-95%
+            white_score = 100 - black_score
 
-            if self.ai:
-                # Very simplified "prediction"
-                score = self.ai.evaluate(self.game)
-                if score > 0:
-                    black_score = min(95, 50 + abs(score) // 100)
-                    white_score = 100 - black_score
-                elif score < 0:
-                    white_score = min(95, 50 + abs(score) // 100)
-                    black_score = 100 - white_score
+            self.win_prediction.setStyleSheet("""
+                QLabel {
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: #E0E0E0;
+                    background-color: rgba(50, 50, 50, 180);
+                    border-radius: 6px;
+                    padding: 8px 12px;
+                    margin-top: 8px;
+                    min-width: 240px;
+                    text-align: center;
+                }
+            """)
 
             self.win_prediction.setText(
-                f"Win Prediction: Black {black_score}% - White {white_score}%"
+                f"""
+                <table cellspacing='0' cellpadding='2'>
+                    <tr>
+                        <td style='color: #000000; 
+                                  background-color: #FADCA2; 
+                                  padding: 4px 8px; 
+                                  border-radius: 4px 0 0 4px;
+                                  font-weight: bold;'>Black</td>
+                        <td style='padding: 0 8px;
+                                  background-color: rgba(70, 70, 70, 200);'>{black_score}%</td>
+                        <td style='padding: 0 4px;
+                                  background-color: rgba(70, 70, 70, 200);'>-</td>
+                        <td style='padding: 0 8px;
+                                  background-color: rgba(70, 70, 70, 200);'>{white_score}%</td>
+                        <td style='color: #FFFFFF; 
+                                  background-color: #555555; 
+                                  padding: 4px 8px; 
+                                  border-radius: 0 4px 4px 0;
+                                  font-weight: bold;'>White</td>
+                    </tr>
+                </table>
+                """
             )
 
     def show_game_result(self):
@@ -671,21 +944,38 @@ class GomokuGUI(QMainWindow):
             winner = "Black" if self.game.winner == 1 else "White"
             msg = f"{winner} wins the game!"
 
-        # Create result dialog
+        # Create standard QMessageBox (without frameless flag)
         dialog = QMessageBox()
+        # dialog.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)  # Standard window flags
+        # dialog.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint)
         dialog.setWindowTitle("Game Over")
         dialog.setText(msg)
+### dialogue style
+        dialog.setStyleSheet("""
+            QMessageBox {
+                background-color: #333333;
+                color: white;
+            }
+            QMessageBox QLabel {
+                color: white;
+            }
+            QMessageBox QPushButton {
+                background-color: #444444;
+                color: white;
+                padding: 5px 10px;
+            }
+        """)
 
-        # Add download button
-        download = dialog.addButton("Download Board", QMessageBox.ActionRole)
-        download.clicked.connect(self.download_board)
+        # Add custom buttons
+        download_btn = dialog.addButton("Download Board", QMessageBox.ActionRole)
+        menu_btn = dialog.addButton("Return to Menu", QMessageBox.AcceptRole)
 
-        # Add return to menu button
-        menu = dialog.addButton("Return to Menu", QMessageBox.AcceptRole)
-        menu.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.menu_view))
+        # Connect buttons
+        download_btn.clicked.connect(self.download_board)
+        menu_btn.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.menu_view))
 
+        # Execute dialog
         dialog.exec_()
-
 
     def paintEvent(self, event):
         # Paint background

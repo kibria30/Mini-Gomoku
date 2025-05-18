@@ -109,3 +109,7 @@ class GomokuGame:
     def is_empty_board(self):
         """Return True if the board has no moves."""
         return np.count_nonzero(self.board) == 0
+
+    def switch_player(self):
+        """Explicitly switch to the next player"""
+        self.current_player = 3 - self.current_player  # Switches between 1 (Black) and 2 (White)

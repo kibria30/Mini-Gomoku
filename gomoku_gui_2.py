@@ -447,7 +447,49 @@ class GomokuGUI:
             self.status_var.set("Black's turn")
         else:
             self.status_var.set("Your turn (Black)")
-    
+
+    def handle_click(self, event):
+        """Handle mouse click events on the board."""
+        if self.waiting_for_ai or self.game.game_over:
+            return
+
+        # Convert pixel coordinates to board indices
+        col = event.x // self.cell_size
+        row = event.y // self.cell_size
+
+        # Make sure we're within bounds
+        if 0 <= row < self.board_size and 0 <= col < self.board_size:
+            # Try to make the move
+            if self.game.make_move(row, col):
+                # Update the display and last move highlight
+                self.last_move = (row, col)
+                self.draw_board()
+
+                # Check if the game is over
+                if self.game.check_win(row, col):
+                    self.game.game_over = True
+                    self.game.winner = self.game.current_player
+                    self.show_game_result()
+                    return
+
+                if self.pass_and_play.get():
+                    # Pass and play mode - switch player
+                    player_name = "White" if self.game.current_player == 2 else "Black"
+                    self.status_var.set(f"{player_name}'s turn")
+                    self.status_label.configure(
+                        bg=self.colors["status_ai"] if player_name == "White" else self.colors["status_player"]
+                    )
+                else:
+                    # AI mode - computer's turn
+                    self.waiting_for_ai = True
+                    self.status_var.set("AI is thinking...")
+                    self.status_label.configure(bg=self.colors["status_ai"])
+                    self.root.update()  # Update the display
+
+                    # Use a slight delay before the AI's move
+                    self.root.after(200, self.ai_move)
+
+
     def change_difficulty(self, event=None):
         """Update AI difficulty settings"""
         difficulty = self.difficulty.get()
@@ -624,46 +666,7 @@ class GomokuGUI:
                     width=2
                 )
     
-    def handle_click(self, event):
-        """Handle mouse click events on the board."""
-        if self.waiting_for_ai or self.game.game_over:
-            return
-        
-        # Convert pixel coordinates to board indices
-        col = event.x // self.cell_size
-        row = event.y // self.cell_size
-        
-        # Make sure we're within bounds
-        if 0 <= row < self.board_size and 0 <= col < self.board_size:
-            # Try to make the move
-            if self.game.make_move(row, col):
-                # Update the display and last move highlight
-                self.last_move = (row, col)
-                self.draw_board()
-                
-                # Check if the game is over
-                if self.game.check_win(row, col):
-                    self.game.game_over = True
-                    self.game.winner = self.game.current_player
-                    self.show_game_result()
-                    return
-                
-                if self.pass_and_play.get():
-                    # Pass and play mode - switch player
-                    player_name = "White" if self.game.current_player == 2 else "Black"
-                    self.status_var.set(f"{player_name}'s turn")
-                    self.status_label.configure(
-                        bg=self.colors["status_ai"] if player_name == "White" else self.colors["status_player"]
-                    )
-                else:
-                    # AI mode - computer's turn
-                    self.waiting_for_ai = True
-                    self.status_var.set("AI is thinking...")
-                    self.status_label.configure(bg=self.colors["status_ai"])
-                    self.root.update()  # Update the display
-                    
-                    # Use a slight delay before the AI's move
-                    self.root.after(200, self.ai_move)
+
     
     def ai_move(self):
         """Make a move for the AI."""
