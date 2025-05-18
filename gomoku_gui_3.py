@@ -79,6 +79,7 @@ class GomokuGUI(QMainWindow):
         self.player_color = 1
         self.board_size = 15
         self.ai_difficulty = 3
+        self.pass_and_play = False
 
         # Initialize UI
         self.init_ui()
@@ -623,14 +624,12 @@ class GomokuGUI(QMainWindow):
     def start_game(self):
         # Initialize game
         self.game = GomokuGame(self.board_size)
+        self.pass_and_play = self.get_selected_mode() == 0  # 0 = Pass & Play
 
-        # Initialize AI if needed
-        ai_mode = self.mode_btns[1].isChecked()
-        if ai_mode:
+        # Initialize AI only if not in Pass & Play mode
+        if not self.pass_and_play:
             self.ai = GomokuAI(max_depth=self.ai_difficulty, player_id=3 - self.player_color)
-
-            # If AI goes first, make its move
-            if self.player_color == 2:  # Player chose white
+            if self.player_color == 2:  # AI goes first if player chose white
                 self.make_ai_move()
 
         # Update UI
@@ -751,26 +750,33 @@ class GomokuGUI(QMainWindow):
             self.show_game_result()
 
     def mousePressEvent(self, event):
-        if self.stacked_widget.currentWidget() == self.game_view and not self.ai_thinking:
-            # Convert mouse position to board coordinates
+        if (self.stacked_widget.currentWidget() == self.game_view
+                and not self.ai_thinking
+                and self.game
+                and not self.game.game_over):
+
             pos = self.board_display.mapFrom(self, event.pos())
             cell_size = self.board_display.pixmap().width() / self.board_size
-
             col = int(pos.x() / cell_size)
             row = int(pos.y() / cell_size)
 
-            # Make move if valid
-            if (0 <= row < self.board_size and 0 <= col < self.board_size and
-                    self.game and self.game.current_player == self.player_color):
+            # For both modes: Check valid move
+            if (0 <= row < self.board_size
+                    and 0 <= col < self.board_size
+                    and self.game.is_valid_move(row, col)):
+
+                # In AI mode, only allow current player's moves
+                if not self.pass_and_play and self.game.current_player != self.player_color:
+                    return
+
                 if self.game.make_move(row, col):
                     self.update_board()
                     self.update_game_info()
 
-                    # Check if game is over
                     if self.game.game_over:
                         self.show_game_result()
-                    elif self.ai and self.game.current_player == self.ai.player_id:
-                        self.make_ai_move()
+                    elif not self.pass_and_play and self.game.current_player == self.ai.player_id:
+                        self.make_ai_move()  # Trigger AI move if in AI mode
 
     def update_board(self, highlight=None):
         if not self.game:
@@ -872,7 +878,11 @@ class GomokuGUI(QMainWindow):
                 """)
         else:
             current = "Black" if self.game.current_player == 1 else "White"
-            text = f"Current turn: {current}"
+            if self.pass_and_play:
+                text = f"{current}'s turn"
+            else:
+                text = f"Your turn ({current})" if self.game.current_player == self.player_color else f"AI thinking..."
+
             self.game_info.setStyleSheet(f"""
                 QLabel {{
                     font-size: 16px;
@@ -946,8 +956,6 @@ class GomokuGUI(QMainWindow):
 
         # Create standard QMessageBox (without frameless flag)
         dialog = QMessageBox()
-        # dialog.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)  # Standard window flags
-        # dialog.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint)
         dialog.setWindowTitle("Game Over")
         dialog.setText(msg)
 ### dialogue style
