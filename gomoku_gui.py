@@ -224,12 +224,10 @@ class GomokuGUI:
         self.status_var.set("Your turn (Black)")
 
 
-def main():
+def run_gui():
     """Main function to start the game."""
     root = tk.Tk()
     app = GomokuGUI(root)
     root.mainloop()
 
 
-if __name__ == "__main__":
-    main() 
