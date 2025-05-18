@@ -32,7 +32,7 @@ pip install -r requirements.txt
 
 Run the main.py file to start the game:
 ```
-python main.py
+python3 main.py
 ```
 
 - Click on the board to place your stone (black)
