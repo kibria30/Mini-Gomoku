@@ -556,7 +556,7 @@ class GomokuGUI(QMainWindow):
         self.board_layout.addWidget(self.board_display)
 
         # Win prediction
-        self.win_prediction = QLabel("Win Prediction: Black 50% - White 50%")
+        self.win_prediction = QLabel(":)")
         self.win_prediction.setStyleSheet("font-size: 16px; margin-top: 20px;")
         self.board_layout.addWidget(self.win_prediction)
 
@@ -613,7 +613,7 @@ class GomokuGUI(QMainWindow):
 
         new_game.clicked.connect(self.reset_game)
         undo.clicked.connect(self.undo_move)
-        abandon.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.menu_view))
+        abandon.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.settings_view))
         hint.clicked.connect(self.get_hint)
 
         controls_layout.addStretch()
@@ -923,19 +923,22 @@ class GomokuGUI(QMainWindow):
                 f"""
                 <table cellspacing='0' cellpadding='2'>
                     <tr>
-                        <td style='color: #000000; 
-                                  background-color: #FADCA2; 
+                        <td style='color: #FFFFFF; 
+                                  background-color: #2D2D2D;  /* Dark black stone color */
                                   padding: 4px 8px; 
                                   border-radius: 4px 0 0 4px;
                                   font-weight: bold;'>Black</td>
-                        <td style='padding: 0 8px;
-                                  background-color: rgba(70, 70, 70, 200);'>{black_score}%</td>
-                        <td style='padding: 0 4px;
-                                  background-color: rgba(70, 70, 70, 200);'>-</td>
-                        <td style='padding: 0 8px;
-                                  background-color: rgba(70, 70, 70, 200);'>{white_score}%</td>
-                        <td style='color: #FFFFFF; 
-                                  background-color: #555555; 
+                        <td style='color: #FADCA2;  /* Gold text for visibility */
+                                  background-color: #424242;
+                                  padding: 0 8px;'>{black_score}%</td>
+                        <td style='color: #E0E0E0;
+                                  background-color: #424242;
+                                  padding: 0 4px;'>-</td>
+                        <td style='color: #FADCA2;  /* Gold text for visibility */
+                                  background-color: #424242;
+                                  padding: 0 8px;'>{white_score}%</td>
+                        <td style='color: #000000; 
+                                  background-color: #FAFAFA;  /* White stone color */
                                   padding: 4px 8px; 
                                   border-radius: 0 4px 4px 0;
                                   font-weight: bold;'>White</td>
@@ -958,7 +961,6 @@ class GomokuGUI(QMainWindow):
         dialog = QMessageBox()
         dialog.setWindowTitle("Game Over")
         dialog.setText(msg)
-### dialogue style
         dialog.setStyleSheet("""
             QMessageBox {
                 background-color: #333333;
@@ -976,11 +978,11 @@ class GomokuGUI(QMainWindow):
 
         # Add custom buttons
         download_btn = dialog.addButton("Download Board", QMessageBox.ActionRole)
-        menu_btn = dialog.addButton("Return to Menu", QMessageBox.AcceptRole)
+        close_btn = dialog.addButton("Close", QMessageBox.AcceptRole)
 
         # Connect buttons
         download_btn.clicked.connect(self.download_board)
-        menu_btn.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.menu_view))
+        close_btn.clicked.connect(dialog.close)
 
         # Execute dialog
         dialog.exec_()
@@ -1043,8 +1045,11 @@ class GomokuGUI(QMainWindow):
         return 3
 
 
-if __name__ == "__main__":
+def main():
     app = QApplication(sys.argv)
     window = GomokuGUI()
     window.show()
     sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
