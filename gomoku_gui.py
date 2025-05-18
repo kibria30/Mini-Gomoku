@@ -201,10 +201,49 @@ class GomokuGUI:
                 if self.game.board[r, c] != 0:
                     self.draw_stone(r, c)
     
+    def get_star_points(self):
+        """Get positions for star points based on board size"""
+        if self.board_size >= 15:
+            return [(3, 3), (3, 11), (3, self.board_size-4),
+                    (7, 7),
+                    (self.board_size-4, 3), (self.board_size-4, 11), (self.board_size-4, self.board_size-4)]
+        else:
+            mid = self.board_size // 2
+            offset = min(2, mid - 1)
+            return [
+                (mid - offset, mid - offset), 
+                (mid - offset, mid + offset), 
+                (mid + offset, mid - offset), 
+                (mid + offset, mid + offset)
+            ]
+    
     def draw_stone(self, row, col):
-        pass
-        # def under construction
-
+        """Draw a stone with enhanced appearance"""
+        x = col * self.cell_size + self.cell_size // 2
+        y = row * self.cell_size + self.cell_size // 2
+        radius = int(self.cell_size * 0.42)
+        
+        if self.game.board[row, col] == 1:  # Player (black)
+            # Create a glossy black stone
+            self.canvas.create_oval(
+                x - radius, y - radius, x + radius, y + radius,
+                fill="black", outline="#333333", width=1
+            )
+            self.canvas.create_oval(
+                x - radius//2, y - radius//2, x + radius//3, y + radius//3,
+                fill="#555555", outline=""
+            )
+        else:  # AI (white)
+            # Create a glossy white stone
+            self.canvas.create_oval(
+                x - radius, y - radius, x + radius, y + radius,
+                fill="white", outline="#CCCCCC", width=1
+            )
+            self.canvas.create_oval(
+                x - radius//2, y - radius//2, x + radius//3, y + radius//3,
+                fill="#F8F8F8", outline=""
+            )
+    
     def handle_click(self, event):
         pass
         # soon
