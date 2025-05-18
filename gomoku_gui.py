@@ -163,9 +163,6 @@ class GomokuGUI:
      
     def draw_board(self):
         pass
-        # under construction
-
-
 
     def draw_stone(self, row, col):
         pass
