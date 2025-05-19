@@ -159,6 +159,7 @@ class GomokuAI:
                 if game.board[r, c] == 0:  # Empty cell
                     # Check if any adjacent cell has a stone
                     has_neighbor = False
+                    # 5x5 area around the cell
                     for dr in range(-2, 3):
                         for dc in range(-2, 3):
                             nr, nc = r + dr, c + dc
@@ -270,9 +271,9 @@ class GomokuAI:
         }
         
         directions = [
-            (1, 0),   # Vertical
-            (0, 1),   # Horizontal
-            (1, 1),   # Diagonal \
+            (1, 0),   # Vertical down
+            (0, 1),   # Horizontal right
+            (1, 1),   # Diagonal \ 
             (1, -1)   # Diagonal /
         ]
         
